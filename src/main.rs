@@ -2,12 +2,21 @@ use std::{
     env::{self}, error::Error, fs::File, io::{self, BufRead}
 };
 
+enum CountType {
+    Words,
+}
+
+struct Args {
+    files: Vec<String>,
+    count_type: CountType,
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
-    let files = cli_files()?;
-    let files_len = files.len();
+    let args = cli_args()?;
+    let files_len = args.files.len();
 
     let mut total: usize = 0;
-    for f in files {
+    for f in args.files {
         let count = count_words(&f)?;
         total += count;
         println!("{count: >8} {f}");
@@ -20,12 +29,20 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn cli_files() -> Result<Vec<String>, Box<dyn Error>> {
+fn cli_args() -> Result<Args, Box<dyn Error>> {
     let args: Vec<String> = env::args().skip(1).collect();
     if args.len() < 1 {
         return Err("no input file(s)")?;
     }
-    Ok(args)
+
+    let mut count_type: CountType = CountType::Words;
+    if args[0].starts_with("-") {
+        match args[0].as_str() {
+            "-w" => count_type = CountType::Words,
+            _ => return Err("invalid count type")?
+        }
+    }
+    Ok(Args { files: args, count_type })
 }
 
 fn count_words(path: &String) -> Result<usize, Box<dyn Error>> {
