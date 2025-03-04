@@ -1,9 +1,13 @@
 use std::{
-    env::{self}, error::Error, fs::File, io::{self, BufRead}
+    env::{self},
+    error::Error,
+    fs::File,
+    io::{self, BufRead},
 };
 
 enum CountType {
     Words,
+    Lines,
 }
 
 struct Args {
@@ -17,7 +21,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut total: usize = 0;
     for f in args.files {
-        let count = count_words(&f)?;
+        let count = match args.count_type {
+            CountType::Lines => count_lines(&f)?,
+            CountType::Words => count_words(&f)?,
+        };
+
         total += count;
         println!("{count: >8} {f}");
     }
@@ -30,7 +38,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn cli_args() -> Result<Args, Box<dyn Error>> {
-    let args: Vec<String> = env::args().skip(1).collect();
+    let mut args: Vec<String> = env::args().skip(1).collect();
     if args.len() < 1 {
         return Err("no input file(s)")?;
     }
@@ -39,10 +47,15 @@ fn cli_args() -> Result<Args, Box<dyn Error>> {
     if args[0].starts_with("-") {
         match args[0].as_str() {
             "-w" => count_type = CountType::Words,
-            _ => return Err("invalid count type")?
+            "-l" => count_type = CountType::Lines,
+            _ => return Err("invalid count type")?,
         }
+        args = env::args().skip(2).collect();
     }
-    Ok(Args { files: args, count_type })
+    Ok(Args {
+        files: args,
+        count_type,
+    })
 }
 
 fn count_words(path: &String) -> Result<usize, Box<dyn Error>> {
@@ -53,4 +66,10 @@ fn count_words(path: &String) -> Result<usize, Box<dyn Error>> {
         count = count + line?.split_whitespace().count();
     }
     Ok(count)
+}
+
+fn count_lines(path: &String) -> Result<usize, Box<dyn Error>> {
+    let file = File::open(path)?;
+    let buf_reader = io::BufReader::new(file);
+    Ok(buf_reader.lines().count())
 }
