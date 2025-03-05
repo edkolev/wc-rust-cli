@@ -2,12 +2,13 @@ use std::{
     env::{self},
     error::Error,
     fs::File,
-    io::{self, BufRead},
+    io::{self, BufRead, Read},
 };
 
 enum CountType {
     Words,
     Lines,
+    Bytes,
 }
 
 struct Args {
@@ -24,6 +25,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let count = match args.count_type {
             CountType::Lines => count_lines(&f)?,
             CountType::Words => count_words(&f)?,
+            CountType::Bytes => count_bytes(&f)?,
         };
 
         total += count;
@@ -48,6 +50,7 @@ fn cli_args() -> Result<Args, Box<dyn Error>> {
         match args[0].as_str() {
             "-w" => count_type = CountType::Words,
             "-l" => count_type = CountType::Lines,
+            "-c" => count_type = CountType::Bytes,
             _ => return Err("invalid count type")?,
         }
         args = env::args().skip(2).collect();
@@ -72,4 +75,10 @@ fn count_lines(path: &String) -> Result<usize, Box<dyn Error>> {
     let file = File::open(path)?;
     let buf_reader = io::BufReader::new(file);
     Ok(buf_reader.lines().count())
+}
+
+fn count_bytes(path: &String) -> Result<usize, Box<dyn Error>> {
+    let file = File::open(path)?;
+    let buf_reader = io::BufReader::new(file);
+    Ok(buf_reader.bytes().count())
 }
