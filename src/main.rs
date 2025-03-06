@@ -13,7 +13,7 @@ enum CountType {
 
 struct Args {
     files: Vec<String>,
-    count_types: Vec<CountType>,
+    count_types: Vec<CountType>, // TODO use a hashset to ensure no duplicates
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -41,25 +41,27 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn cli_args() -> Result<Args, Box<dyn Error>> {
-    let mut args: Vec<String> = env::args().skip(1).collect();
-    if args.len() < 1 {
-        return Err("no input file(s)")?;
+    let mut a = Args {files: vec![], count_types: vec![]};
+    for arg in env::args().skip(1) {
+        if arg.as_str().starts_with("-") {
+            match arg.as_str() {
+                "-w" => a.count_types.push(CountType::Words),
+                "-l" => a.count_types.push(CountType::Lines),
+                "-b" => a.count_types.push(CountType::Bytes),
+                _ => return Err("invalid count type")?,
+            }
+        } else {
+            a.files.push(arg);
+        }
     }
 
-    let mut count_type: CountType = CountType::Words;
-    if args[0].starts_with("-") {
-        match args[0].as_str() {
-            "-w" => count_type = CountType::Words,
-            "-l" => count_type = CountType::Lines,
-            "-c" => count_type = CountType::Bytes,
-            _ => return Err("invalid count type")?,
-        }
-        args = env::args().skip(2).collect();
+    if a.files.len() == 0 {
+        return Err("no input file(s)")?;
     }
-    Ok(Args {
-        files: args,
-        count_types: vec!(count_type),
-    })
+    if a.count_types.len() == 0 {
+        a.count_types = vec!(CountType::Words)
+    }
+    Ok(a)
 }
 
 fn count_words(path: &String) -> Result<usize, Box<dyn Error>> {
