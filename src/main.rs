@@ -13,7 +13,7 @@ enum CountType {
 
 struct Args {
     files: Vec<String>,
-    count_type: CountType,
+    count_types: Vec<CountType>,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -22,10 +22,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut total: usize = 0;
     for f in args.files {
-        let count = match args.count_type {
-            CountType::Lines => count_lines(&f)?,
-            CountType::Words => count_words(&f)?,
-            CountType::Bytes => count_bytes(&f)?,
+        let count = match args.count_types[..] {
+            [CountType::Lines] => count_lines(&f)?,
+            [CountType::Words] => count_words(&f)?,
+            [CountType::Bytes] => count_bytes(&f)?,
+            _ => panic!("unplemented"),
         };
 
         total += count;
@@ -57,7 +58,7 @@ fn cli_args() -> Result<Args, Box<dyn Error>> {
     }
     Ok(Args {
         files: args,
-        count_type,
+        count_types: vec!(count_type),
     })
 }
 
